@@ -1,59 +1,52 @@
 require 'rubygems'
 require 'restclient'
 require 'xmlsimple'
-require 'pony'
 
-# First argument should be a subreddit
-subreddit = ARGV[0]
-# destination  is the second argument
-destination = ARGV[1]
+iregex = /http:\/\/i.imgur.com\/[0-9a-zA-Z]+\.(jpg|gif|png)/i
+newfiles = 0
 
-# get the rss feed
-data = RestClient.get "http://www.reddit.com/r/#{subreddit}/.rss"
-if data.code != 200
-  puts "Invalid subreddit (url)"
-  exit
-end
-# get xml from the data
-begin
-  xml = XmlSimple.xml_in(data)
-rescue
-  puts "XML was invalid."
-  exit
-end
+ARGV.each do |subreddit|
+  destination = subreddit
 
-# make the empty directory pics
-FileUtils.rm_rf 'pics' if File.exist? 'pics'
-FileUtils.mkdir 'pics'
+  # get the rss feed
+  data = RestClient.get "http://www.reddit.com/r/#{subreddit}/.rss"
+  if data.code != 200
+    puts "Invalid subreddit (url)"
+    exit
+  end
+  # get xml from the data
+  begin
+    xml = XmlSimple.xml_in(data)
+  rescue
+    puts "XML for subreddit #{subreddit} was invalid."
+    exit
+  end
 
-# get all the links
-links = xml["channel"][0]["item"].collect { |i|
-	i["description"][0].scan(/http:\/\/i.imgur.com\/[0-9a-zA-Z]+\.jpg/).first
-}
+  # make the empty directory pics
+  begin
+    FileUtils.mkdir destination
+  rescue
+  end
 
-# download all the files
-links.each { |l|
-	File.open('pics/' + File.basename(l), 'w') { |f| f.write(RestClient.get(l)) } unless l.nil?
-}
+  # get all the links
+  links = xml["channel"][0]["item"].collect { |i|
+    iregex.match(i["description"][0])
+  }
 
-# put the files into an array to attach to the file
-files = {}
-Dir.entries('pics').each { |f|
-	files[File.basename(f)] = File.read('pics/' + f) unless f == "." || f == ".."
-}
-
-# send the email
-begin
-	sent = Pony.mail(
-		:to => destination,
-		:from => destination,
-		:subject => 'Reddit Scraper', 
-		:body => 'Here are your wonderful files...',
-		:attachments => files
-	)
-rescue
-	puts "Email wasn't sent." if !sent
+  # download all the files
+  links.each { |lnk|
+    next if lnk.nil?
+    l = lnk[0]
+    i = File.join destination, File.basename(l)
+    already_have = File.exists? i
+    if already_have
+      puts "Skipping write of #{i}"
+    else
+      File.open(i, 'w') { |f| f.write(RestClient.get(l)) }
+      puts "Writing #{i}"
+      newfiles = newfiles + 1
+    end
+  }
 end
 
-# remove the directory
-FileUtils.rm_rf 'pics'
+puts "\nWrote #{newfiles} new files."
