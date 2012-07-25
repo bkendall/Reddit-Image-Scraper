@@ -2,7 +2,7 @@ require 'rubygems'
 require 'restclient'
 require 'xmlsimple'
 
-iregex = /http:\/\/i.imgur.com\/[0-9a-zA-Z]+\.(jpg|gif|png)/i
+iregex = /http:\/\/i.(minus|imgur).com\/[0-9a-zA-Z]+\.(jpg|gif|png){0,1}/i
 newfiles = 0
 
 ARGV.each do |subreddit|
@@ -37,14 +37,36 @@ ARGV.each do |subreddit|
   links.each { |lnk|
     next if lnk.nil?
     l = lnk[0]
-    i = File.join destination, File.basename(l)
-    already_have = File.exists? i
-    if already_have
-      puts "Skipping write of #{i}"
+    img = (/(jpg|gif|png)$/i).match l
+    if !img
+      [".jpg", ".gif", ".png"].each { |ending|
+        puts "  Checking #{l}"
+        candidate = l.to_s + ending
+        i = File.join destination, File.basename(candidate)
+        already_have = File.exists? i
+        if already_have
+          puts "Skipping write of #{i}"
+          break
+        else
+          RestClient.get(candidate) { |response, request, result|
+            next if response.code.to_s.start_with? "404"
+            File.open(i, 'w') { |f| f.write response }
+            puts "Writing #{i}"
+            newfiles = newfiles + 1
+            break
+          }
+        end
+      }
     else
-      File.open(i, 'w') { |f| f.write(RestClient.get(l)) }
-      puts "Writing #{i}"
-      newfiles = newfiles + 1
+      i = File.join destination, File.basename(l)
+      already_have = File.exists? i
+      if already_have
+        puts "Skipping write of #{i}"
+      else
+        File.open(i, 'w') { |f| f.write(RestClient.get(l)) }
+        puts "Writing #{i}"
+        newfiles = newfiles + 1
+      end
     end
   }
 end
