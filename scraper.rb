@@ -2,7 +2,7 @@ require 'rubygems'
 require 'restclient'
 require 'xmlsimple'
 
-iregex = /http:\/\/i.(minus|imgur).com\/[0-9a-zA-Z]+\.(jpg|gif|png){0,1}/i
+iregex = /http:\/\/(i\.){0,1}(minus|imgur).com\/[0-9a-zA-Z]+(\.jpg|\.gif|\.png){0,1}/i
 newfiles = 0
 
 ARGV.each do |subreddit|
