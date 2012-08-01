@@ -2,7 +2,7 @@ require 'rubygems'
 require 'restclient'
 require 'xmlsimple'
 
-iregex = /http:\/\/(i\.){0,1}(minus|imgur).com\/[0-9a-zA-Z]+(\.jpg|\.gif|\.png){0,1}/i
+iregex = /http:\/\/(i\.){0,1}(minus|imgur).com\/([0-9a-zA-Z]){3,}(\.jpg|\.gif|\.png){0,1}/i
 newfiles = 0
 
 ARGV.each do |subreddit|
@@ -43,17 +43,19 @@ ARGV.each do |subreddit|
         puts "  Checking #{l}"
         candidate = l.to_s + ending
         i = File.join destination, File.basename(candidate)
-        already_have = File.exists? i
+        gstr = "#{File.join(destination, File.basename(l.to_s))}*"
+	puts "   gstr: #{gstr}"
+        g = Dir.glob gstr
+        already_have = g.size > 0
         if already_have
           puts "Skipping write of #{i}"
           break
         else
           RestClient.get(candidate) { |response, request, result|
-            next if response.code.to_s.start_with? "404"
+            next unless response.code.to_s.start_with? "200"
             File.open(i, 'w') { |f| f.write response }
             puts "Writing #{i}"
             newfiles = newfiles + 1
-            break
           }
         end
       }
