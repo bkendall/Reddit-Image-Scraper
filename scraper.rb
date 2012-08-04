@@ -65,9 +65,12 @@ ARGV.each do |subreddit|
       if already_have
         puts "Skipping write of #{i}"
       else
-        File.open(i, 'w') { |f| f.write(RestClient.get(l)) }
-        puts "Writing #{i}"
-        newfiles = newfiles + 1
+        begin
+          File.open(i, 'w') { |f| f.write(RestClient.get(l)) }
+          puts "Writing #{i}"
+          newfiles = newfiles + 1
+        rescue
+        end
       end
     end
   }
