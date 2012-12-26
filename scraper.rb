@@ -9,10 +9,15 @@ ARGV.each do |subreddit|
   destination = subreddit
 
   # get the rss feed
-  data = RestClient.get "http://www.reddit.com/r/#{subreddit}/.rss"
-  if data.code != 200
-    puts "Invalid subreddit (url)"
-    exit
+  begin
+    data = RestClient.get "http://www.reddit.com/r/#{subreddit}/.rss"
+    if data.code != 200
+      puts "Invalid subreddit (url)"
+      next
+    end
+  rescue
+    puts "Couldn't get #{subreddit}/.rss"
+    next
   end
   # get xml from the data
   begin
@@ -51,12 +56,16 @@ ARGV.each do |subreddit|
           puts "Skipping write of #{i}"
           break
         else
-          RestClient.get(candidate) { |response, request, result|
-            next unless response.code.to_s.start_with? "200"
-            File.open(i, 'w') { |f| f.write response }
-            puts "Writing #{i}"
-            newfiles = newfiles + 1
-          }
+          begin
+            RestClient.get(candidate) { |response, request, result|
+              next unless response.code.to_s.start_with? "200"
+              File.open(i, 'w') { |f| f.write response }
+              puts "Writing #{i}"
+              newfiles = newfiles + 1
+            }
+          rescue
+            next
+          end
         end
       }
     else
