@@ -62,6 +62,7 @@ ARGV.each do |subreddit|
               File.open(i, 'w') { |f| f.write response }
               puts "  Wrote #{i}"
               newfiles[subreddit] = newfiles[subreddit] + 1
+              break
             }
           rescue
             next
