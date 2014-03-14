@@ -6,12 +6,11 @@ Requirements
 ==========
 
 the following rubygems are required:
-- pony
 - rest-client
 - xml-simple
 
 Usage
 ==========
-e.g ruby scraper.rb pics user@email.com
+e.g ruby scraper.rb pics robots monsters
 
-This will take all the imgur pics from the /r/pics subreddit and send them as an attachment to user@email.com
+This will take all the imgur images (jpg, gif, and png) from the /r/pics, /r/robots, and /r/monsters subreddits, and save them in subdirectories of the current directory with the same names as the subreddits.
